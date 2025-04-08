@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng Thi Đấu Drone Soccer - Bán kểt</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <img src="../images/logo-left.png" alt="Logo Trái" class="logo-left">
+    <img src="../images/logo-right.png" alt="Logo Phải" class="logo-right">
+    <h1>Bảng Thi Đấu Drone Soccer - Vòng Bán kết</h1>
+    <button onclick="randomizeMatches()">🎲 Xáo Trộn Đội</button>
+    <button onclick="resetScores()">🔄 Reset Điểm</button>
+    <div class="container" id="matches-container"></div>
+    <button id="nextRoundButton" class="hidden" onclick="goToBackRound()">⬅ Lùi lại Vòng Tứ Kết</button>
+    <button id="nextRoundButton" class="hidden" onclick="goToNextRound()">➡ Tiến tới Trận Tranh 3-4</button>
+    <script>
+        // let teams = [
+        //     "Đội 1", "Đội 2", "Đội 3", "Đội 4", 
+        //     "Đội 5", "Đội 6", "Đội 7", "Đội 8"
+        // ];
+        let teams = JSON.parse(localStorage.getItem("winners1")) || [];
+
+        let matches = [];
+        
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                let j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+        function randomizeMatches() {
+            let savedMatches = localStorage.getItem("matches2");
+            // Xóa dữ liệu cũ trong localStorage trước khi xáo trộn
+            localStorage.removeItem("matches2"); // Xóa dữ liệu cũ
+    
+            if (savedMatches) {
+                matches = JSON.parse(savedMatches);
+                renderMatches();
+                return; // Không xáo trộn nếu có dữ liệu cũ
+            }
+            if (teams.length === 4) {
+                shuffle(teams);
+            } else {
+                alert("Lỗi: Không tìm thấy danh sách đội từ vòng 8.");
+                return;
+            }
+
+            matches = [];
+            let matchesContainer = document.getElementById("matches-container");
+            matchesContainer.innerHTML = "";
+
+            for (let i = 0; i < teams.length; i += 2) {
+                let match = {
+                    team1: teams[i],
+                    team2: teams[i + 1],
+                    score1: [0, 0, 0], // 3 trận
+                    score2: [0, 0, 0],
+                    foul1: [0, 0, 0], // Số lỗi phạm của đội 1
+                    foul2: [0, 0, 0], // Số lỗi phạm của đội 2
+                    totalPoints1: 0,
+                    totalPoints2: 0,
+                    totalScore1: 0,
+                    totalScore2: 0,
+                    totalFoul1: 0,
+                    totalFoul2: 0
+                };
+                matches.push(match);
+            }
+            saveToLocalStorage(); // Lưu lại trận đấu mới
+            renderMatches();
+        }
+        function updateScore(matchIndex, gameIndex, team, value) {
+            let match = matches[matchIndex];
+            value = parseInt(value) || 0;
+
+            if (team === 1) {
+                match.score1[gameIndex] = value;
+            } else {
+                match.score2[gameIndex] = value;
+            }
+            
+            calculateResults(matchIndex);
+        }
+        function updateFoul(matchIndex, gameIndex, team, value) {
+            let match = matches[matchIndex];
+            value = parseInt(value) || 0;
+
+            if (team === 1) {
+                match.foul1[gameIndex] = value;
+            } else {
+                match.foul2[gameIndex] = value;
+            }
+            
+            calculateResults(matchIndex);
+        }
+        function calculateResults(matchIndex) {
+            let match = matches[matchIndex];
+            match.totalPoints1 = 0;
+            match.totalPoints2 = 0;
+            match.totalScore1 = 0;
+            match.totalScore2 = 0;
+            match.totalFoul1 = 0;
+            match.totalFoul2 = 0;
+
+            for (let i = 0; i < 2; i++) {
+                const s1 = match.score1[i];
+                const s2 = match.score2[i];
+                const f1 = match.foul1[i];
+                const f2 = match.foul2[i];
+
+                match.totalScore1 += s1;
+                match.totalScore2 += s2;
+                match.totalFoul1 += f1;
+                match.totalFoul2 += f2;
+
+                if (s1 > s2) {
+                    match.totalPoints1 += 3;
+                } else if (s2 > s1) {
+                    match.totalPoints2 += 3;
+                } else {
+                    // Hòa điểm → xét lỗi
+                    if (f1 < f2) {
+                        match.totalPoints1 += 3;
+                    } else if (f2 < f1) {
+                        match.totalPoints2 += 3;
+                    } else {
+                        // Hòa lỗi → chia điểm
+                        match.totalPoints1 += 1;
+                        match.totalPoints2 += 1;
+                    }
+                }
+            }
+
+            // Xử lý trận 3 Golden Goal nếu sau 2 trận tổng điểm bằng nhau
+            const g3_1 = match.score1[2];
+            const g3_2 = match.score2[2];
+            if (match.totalPoints1 === match.totalPoints2) {
+                if (g3_1 > g3_2) {
+                    match.totalPoints1 += 1;
+                } else if (g3_2 > g3_1) {
+                    match.totalPoints2 += 1;
+                }
+                // nếu chưa ai ghi bàn Golden Goal thì giữ nguyên
+            }
+
+            saveToLocalStorage(); // Lưu dữ liệu khi cập nhật điểm
+            renderMatches();
+        }
+        function renderMatches() {
+            let matchesContainer = document.getElementById("matches-container");
+            matchesContainer.innerHTML = "";
+
+            matches.forEach((match, index) => {
+                let scoreInputs = "";
+                let foulInputs = "";
+                for (let i = 0; i < 2; i++) {
+                    const team1Class = i % 2 === 0 ? "red-border" : "blue-border";
+                    const team2Class = i % 2 === 0 ? "blue-border" : "red-border";
+
+                    scoreInputs += `
+                        <input type="number" class="score-input ${team1Class}" value="${match.score1[i]}" 
+                            oninput="updateScore(${index}, ${i}, 1, this.value)">
+                        -
+                        <input type="number" class="score-input ${team2Class}" value="${match.score2[i]}" 
+                            oninput="updateScore(${index}, ${i}, 2, this.value)">
+                        <br>
+                    `;
+
+                    foulInputs += `
+                        <input type="number" class="score-input ${team1Class}" value="${match.foul1[i]}" 
+                            oninput="updateFoul(${index}, ${i}, 1, this.value)">
+                        -
+                        <input type="number" class="score-input ${team2Class}" value="${match.foul2[i]}" 
+                            oninput="updateFoul(${index}, ${i}, 2, this.value)">
+                        <br>
+                    `;
+                }
+
+                let goldenGoalInputs = "";
+                let winnerText = `<br><b>Xét tổng điểm: ${match.totalPoints1} - ${match.totalPoints2}</b>`;
+
+                // Kiểm tra có cần đá trận 3 (Golden Goal) không
+                let needGoldenGoal = (
+                    match.score1[0] !== 0 || match.score2[0] !== 0 ||
+                    match.score1[1] !== 0 || match.score2[1] !== 0
+                ) && match.totalPoints1 === match.totalPoints2;
+
+                if (needGoldenGoal || (match.score1[2] > 0 || match.score2[2] > 0)) {
+                    // Luôn hiển thị ô nhập trận 3 nếu cần hoặc nếu đã nhập trận 3
+                    const g3_1 = match.score1[2];
+                    const g3_2 = match.score2[2];
+
+                    goldenGoalInputs = `
+                        <br><b>Thi đấu Trận 3 - Golden Goal!</b><br>
+                        <input type="number" class="score-input blue-border" value="${g3_1}" 
+                            oninput="updateScore(${index}, 2, 1, this.value)">
+                        -
+                        <input type="number" class="score-input red-border" value="${g3_2}" 
+                            oninput="updateScore(${index}, 2, 2, this.value)">
+                    `;
+
+                    if (g3_1 > g3_2) {
+                        winnerText += `<br><b>${match.team1} Thắng Golden Goal! 🏆</b>`;
+                    } else if (g3_2 > g3_1) {
+                        winnerText += `<br><b>${match.team2} Thắng Golden Goal! 🏆</b>`;
+                    } else {
+                        winnerText += `<br><i>Chưa có bàn thắng Golden Goal!</i>`;
+                    }
+                } else {
+                    // Xử lý kết quả bình thường
+                    if (match.totalPoints1 > match.totalPoints2) {
+                        winnerText += `<br><b>${match.team1} Vào Vòng Chung Kết! 🏆</b>`;
+                    } else if (match.totalPoints2 > match.totalPoints1) {
+                        winnerText += `<br><b>${match.team2} Vào Vòng Chung Kết! 🏆</b>`;
+                    }
+                }
+
+                matchesContainer.innerHTML += `
+                    <div class="match-box">
+                        <div class="match-title">Trận ${index + 21}</div>
+                        ${match.team1} 🆚 ${match.team2}<br><br>
+                        Điểm số:<br>${scoreInputs}
+                        Phạm lỗi:<br>${foulInputs}
+                        ${goldenGoalInputs}
+                        ${winnerText}
+                    </div>
+                `;
+            });
+        }
+        function checkAndShowNextButton() {
+            let allMatchesCompleted = matches.every(match => match.totalPoints1 !== 0 || match.totalPoints2 !== 0);
+            document.getElementById("nextRoundButton").classList.toggle("hidden", !allMatchesCompleted);
+        }
+        function goToNextRound() {
+            let winners2 = matches.map(match => match.totalPoints1 < match.totalPoints2 || 
+                (match.totalPoints1 === match.totalPoints2 && match.totalFoul1 > match.totalFoul2) ? match.team1 : match.team2);
+            
+            localStorage.setItem("winners2", JSON.stringify(winners2));
+            
+            let winners5 = matches.map(match => match.totalPoints1 > match.totalPoints2 || 
+                (match.totalPoints1 === match.totalPoints2 && match.totalFoul1 > match.totalFoul2) ? match.team1 : match.team2);
+            
+            localStorage.setItem("winners5", JSON.stringify(winners5));
+
+            window.location.href = "4_34.html";
+        }
+        function goToBackRound() {
+            window.location.href = "2_8.html";
+        }
+        function resetScores() {
+            matches.forEach(match => {
+                match.score1 = [0, 0, 0];
+                match.score2 = [0, 0, 0];
+                match.foul1 = [0, 0, 0];
+                match.foul2 = [0, 0, 0];
+                match.totalPoints1 = 0;
+                match.totalPoints2 = 0;
+                match.totalScore1 = 0;
+                match.totalScore2 = 0;
+                match.totalFoul1 = 0;
+                match.totalFoul2 = 0;
+            });
+
+            saveToLocalStorage(); // Lưu dữ liệu sau reset
+            renderMatches();
+        }
+        function saveToLocalStorage() {
+            localStorage.setItem("matches2", JSON.stringify(matches));
+        }
+        function loadFromLocalStorage() {
+            let savedMatches = localStorage.getItem("matches2");
+            if (savedMatches) {
+                matches = JSON.parse(savedMatches);
+                renderMatches();
+            }
+        }
+        randomizeMatches();
+    </script>
+</body>
+</html>

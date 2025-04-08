@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EIU DRONE - Scoreboard</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #000;
+      color: #fff;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+    .header {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(to right, red 50%, #0066cc 50%);
+      color: white;
+      padding: 10px;
+      font-size: 24px;
+      font-weight: bold;
+    }
+    .team-names {
+      display: flex;
+      justify-content: space-around;
+      font-size: 18px;
+      margin: 10px 0;
+    }
+    .team-names input {
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid #fff;
+      color: white;
+      font-size: 18px;
+      text-align: center;
+      width: 200px;
+    }
+    .scoreboard {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 20px auto;
+      gap: 40px;
+    }
+    .circle {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 80px;
+      font-weight: bold;
+    }
+    .red-circle {
+      border: 8px solid red;
+      color: white;
+    }
+    .blue-circle {
+      border: 8px solid #00aaff;
+      color: white;
+    }
+    .vs {
+      font-size: 48px;
+      font-weight: bold;
+      margin: 0 20px;
+    }
+    .timer {
+      font-size: 36px;
+      margin: 20px;
+    }
+    .fouls {
+      display: flex;
+      justify-content: space-between;
+      padding: 0 50px;
+      font-size: 50px;
+    }
+    .foul-box-red {
+      border: 4px solid red;
+      border-radius: 10px;
+      padding: 10px;
+      min-width: 80px;
+    }
+    .foul-box-blue {
+      border: 4px solid blue;
+      border-radius: 10px;
+      padding: 10px;
+      min-width: 80px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">EIU DRONE SOCCER CHAMPIONSHIP 2025</div>
+  <div class="team-names">
+    <input id="redName" value="Đội 1" />
+    <input id="blueName" value="Đội 2" />
+  </div>
+  <div class="scoreboard">
+    <div class="circle red-circle" id="redScore">0</div>
+    <div class="vs">VS</div>
+    <div class="circle blue-circle" id="blueScore">0</div>
+  </div>
+  <div class="timer" id="timer">03:00.0</div>
+  <div class="fouls">
+    <div class="foul-box-red"><span id="redFouls">0</span></div>
+    <div class="foul-box-blue"><span id="blueFouls">0</span></div>
+  </div>
+
+  <script>
+    let redScore = 0;
+    let blueScore = 0;
+    let redFouls = 0;
+    let blueFouls = 0;
+
+    let totalTime = 180000; // 3 minutes in ms
+    let timerElement = document.getElementById("timer");
+    let timerInterval;
+    let timerRunning = false;
+    let pausedTime = totalTime;
+
+    function updateScores() {
+      document.getElementById("redScore").innerText = redScore;
+      document.getElementById("blueScore").innerText = blueScore;
+      document.getElementById("redFouls").innerText = redFouls;
+      document.getElementById("blueFouls").innerText = blueFouls;
+    }
+
+    function startTimer() {
+      if (timerRunning) return;
+      let endTime = Date.now() + pausedTime;
+      timerRunning = true;
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        let now = Date.now();
+        let remaining = endTime - now;
+        pausedTime = remaining;
+        if (remaining <= 0) {
+          clearInterval(timerInterval);
+          timerElement.innerText = "00:00.0";
+          timerRunning = false;
+          pausedTime = 0;
+          return;
+        }
+        let minutes = Math.floor(remaining / 60000);
+        let seconds = Math.floor((remaining % 60000) / 1000);
+        let tenths = Math.floor((remaining % 1000) / 100);
+        timerElement.innerText = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${tenths}`;
+      }, 100);
+    }
+
+    function pauseTimer() {
+      if (timerRunning) {
+        clearInterval(timerInterval);
+        timerRunning = false;
+      }
+    }
+
+    function resetAll() {
+      redScore = 0;
+      blueScore = 0;
+      redFouls = 0;
+      blueFouls = 0;
+      updateScores();
+      timerElement.innerText = "03:00.0";
+      totalTime = 180000;
+      pausedTime = totalTime;
+      timerRunning = false;
+      clearInterval(timerInterval);
+    }
+
+    document.addEventListener('keydown', (e) => {
+      switch (e.key) {
+        case 'w':
+          redScore++;
+          break;
+        case 's':
+          redScore--;
+          break;
+        case '-':
+          blueScore--;
+          break;
+        case '0':
+          blueScore++;
+          break;
+        case '1':
+          redFouls++;
+          break;
+        case '2':
+          redFouls--;
+          break;
+        case '9':
+          blueFouls++;
+          break;
+        case '8':
+          blueFouls--;
+          break;
+        case 'r':
+          resetAll();
+          break;
+        case 'p':
+          startTimer();
+          break;
+        case '7':
+          pauseTimer();
+          break;
+      }
+      updateScores();
+    });
+  </script>
+</body>
+</html>
