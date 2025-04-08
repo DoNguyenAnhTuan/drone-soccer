@@ -3,24 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bảng Thi Đấu Drone Soccer - Bán kểt</title>
-    <link rel="stylesheet" href="../css/styles.css">
+    <title>Bảng Thi Đấu Drone Soccer - Vòng Tứ kết</title>
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <img src="../images/logo-left.png" alt="Logo Trái" class="logo-left">
-    <img src="../images/logo-right.png" alt="Logo Phải" class="logo-right">
-    <h1>Bảng Thi Đấu Drone Soccer - Vòng Bán kết</h1>
+    <img src="images/logo-left.png" alt="Logo Trái" class="logo-left">
+    <img src="images/logo-right.png" alt="Logo Phải" class="logo-right">
+    <h1>Bảng Thi Đấu Drone Soccer - Vòng Tứ kết</h1>
     <button onclick="randomizeMatches()">🎲 Xáo Trộn Đội</button>
     <button onclick="resetScores()">🔄 Reset Điểm</button>
     <div class="container" id="matches-container"></div>
-    <button id="nextRoundButton" class="hidden" onclick="goToBackRound()">⬅ Lùi lại Vòng Tứ Kết</button>
-    <button id="nextRoundButton" class="hidden" onclick="goToNextRound()">➡ Tiến tới Trận Tranh 3-4</button>
+    <button id="nextRoundButton" class="hidden" onclick="goToBackRound()">⬅ Lùi lại Vòng 1-8</button>
+    <button id="nextRoundButton" class="hidden" onclick="goToNextRound()">➡ Tiến tới Bán kết</button>
+    
     <script>
         // let teams = [
         //     "Đội 1", "Đội 2", "Đội 3", "Đội 4", 
         //     "Đội 5", "Đội 6", "Đội 7", "Đội 8"
         // ];
-        let teams = JSON.parse(localStorage.getItem("winners1")) || [];
+        let teams = JSON.parse(localStorage.getItem("16")) || [];
 
         let matches = [];
         
@@ -31,19 +32,21 @@
             }
         }
         function randomizeMatches() {
-            let savedMatches = localStorage.getItem("matches2");
+            let savedMatches = localStorage.getItem("matches1");
+            
             // Xóa dữ liệu cũ trong localStorage trước khi xáo trộn
-            localStorage.removeItem("matches2"); // Xóa dữ liệu cũ
-    
+            localStorage.removeItem("matches1"); // Xóa dữ liệu cũ
+
             if (savedMatches) {
                 matches = JSON.parse(savedMatches);
                 renderMatches();
                 return; // Không xáo trộn nếu có dữ liệu cũ
             }
-            if (teams.length === 4) {
+
+            if (teams.length === 8) {
                 shuffle(teams);
             } else {
-                alert("Lỗi: Không tìm thấy danh sách đội từ vòng 8.");
+                alert("Lỗi: Không tìm thấy danh sách đội từ vòng bảng.");
                 return;
             }
 
@@ -155,6 +158,7 @@
             matches.forEach((match, index) => {
                 let scoreInputs = "";
                 let foulInputs = "";
+                
                 for (let i = 0; i < 2; i++) {
                     const team1Class = i % 2 === 0 ? "red-border" : "blue-border";
                     const team2Class = i % 2 === 0 ? "blue-border" : "red-border";
@@ -211,9 +215,9 @@
                 } else {
                     // Xử lý kết quả bình thường
                     if (match.totalPoints1 > match.totalPoints2) {
-                        winnerText += `<br><b>${match.team1} Vào Vòng Chung Kết! 🏆</b>`;
+                        winnerText += `<br><b>${match.team1} Vào Vòng Bán Kết! 🏆</b>`;
                     } else if (match.totalPoints2 > match.totalPoints1) {
-                        winnerText += `<br><b>${match.team2} Vào Vòng Chung Kết! 🏆</b>`;
+                        winnerText += `<br><b>${match.team2} Vào Vòng Bán Kết! 🏆</b>`;
                     }
                 }
 
@@ -229,25 +233,21 @@
                 `;
             });
         }
+
         function checkAndShowNextButton() {
             let allMatchesCompleted = matches.every(match => match.totalPoints1 !== 0 || match.totalPoints2 !== 0);
             document.getElementById("nextRoundButton").classList.toggle("hidden", !allMatchesCompleted);
         }
         function goToNextRound() {
-            let winners2 = matches.map(match => match.totalPoints1 < match.totalPoints2 || 
-                (match.totalPoints1 === match.totalPoints2 && match.totalFoul1 > match.totalFoul2) ? match.team1 : match.team2);
+            let winners1 = matches.map(match => match.totalPoints1 > match.totalPoints2 || 
+                (match.totalPoints1 === match.totalPoints2 && match.totalFoul1 < match.totalFoul2) ? match.team1 : match.team2);
             
-            localStorage.setItem("winners2", JSON.stringify(winners2));
-            
-            let winners5 = matches.map(match => match.totalPoints1 > match.totalPoints2 || 
-                (match.totalPoints1 === match.totalPoints2 && match.totalFoul1 > match.totalFoul2) ? match.team1 : match.team2);
-            
-            localStorage.setItem("winners5", JSON.stringify(winners5));
-
-            window.location.href = "4_34.html";
+            localStorage.setItem("winners1", JSON.stringify(winners1));
+            window.location.href = "3_4.html";
         }
         function goToBackRound() {
-            window.location.href = "2_8.html";
+            
+            window.location.href = "1_16.html";
         }
         function resetScores() {
             matches.forEach(match => {
@@ -267,16 +267,19 @@
             renderMatches();
         }
         function saveToLocalStorage() {
-            localStorage.setItem("matches2", JSON.stringify(matches));
+            localStorage.setItem("matches1", JSON.stringify(matches));
         }
         function loadFromLocalStorage() {
-            let savedMatches = localStorage.getItem("matches2");
+            let savedMatches = localStorage.getItem("matches1");
             if (savedMatches) {
                 matches = JSON.parse(savedMatches);
                 renderMatches();
             }
         }
+
         randomizeMatches();
     </script>
 </body>
 </html>
+
+
